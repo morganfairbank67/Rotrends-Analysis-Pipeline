@@ -24,7 +24,6 @@ def login_Save_State(page, context):
     page.keyboard.insert_text(YourPassword)
     page.wait_for_timeout(500)
 
-    time.sleep(1)
     
     page.keyboard.press("Enter")
     
@@ -140,8 +139,6 @@ def main():
         browser.close()
 
         final_df = pd.concat(all_dataframes, ignore_index=True)
-
-        print(final_df)
 
 if __name__ == "__main__":
     main()
