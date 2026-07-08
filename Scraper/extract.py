@@ -75,9 +75,8 @@ def extract_games(page, category):
         game_data["Date Extracted"] = datetime.datetime.now().strftime("%Y-%m-%d")
         all_games.append(game_data)
 
-    df = pd.DataFrame(all_games)
 
-    return df
+    return all_games
 
 
 def new_and_rising_games(page, columns):
@@ -126,19 +125,19 @@ def main():
 
         login_Save_State(page, context)
 
-        all_dataframes = []
+        all_games_final = []
 
-        all_dataframes.append(new_and_rising_games(page, columns))
-        all_dataframes.append(top_moving_games(page, columns))
-        all_dataframes.append(new_and_stable_games(page, columns))
-        all_dataframes.append(top_100_games(page, columns))
-        all_dataframes.append(top_by_earning(page, columns))
-        all_dataframes.append(top_by_players(page, columns))
-        all_dataframes.append(top_by_session(page, columns))
+        all_games_final.append(new_and_rising_games(page, columns))
+        all_games_final.append(top_moving_games(page, columns))
+        all_games_final.append(new_and_stable_games(page, columns))
+        all_games_final.append(top_100_games(page, columns))
+        all_games_final.append(top_by_earning(page, columns))
+        all_games_final.append(top_by_players(page, columns))
+        all_games_final.append(top_by_session(page, columns))
 
         browser.close()
 
-        final_df = pd.concat(all_dataframes, ignore_index=True)
+        return all_games_final
 
 if __name__ == "__main__":
     main()
