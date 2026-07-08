@@ -1,0 +1,35 @@
+from pydantic import BaseModel, ValidationError, Field, field_validator
+from typing import Optional
+from datetime import datetime
+import uuid
+
+class ScrapedGameData(BaseModel):
+    game_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Unique identifier for the game")
+    game_name: str = Field(..., description="Name of the game")
+    category: str = Field(..., description="Category of the game")
+    global_rank: int = Field(None, description="Global rank of the game")
+    global_rank_shift_1d: int = Field(None, description="Global rank shift in the last 1 day")
+    global_rank_shift_1w: int = Field(None, description="Global rank shift in the last 1 week")
+    global_rank_shift_1m: int = Field(None, description="Global rank shift in the last 1 month")
+    avg_ccu_rank_7d: int = Field(None, description="Average CCU rank over the last 7 days")
+    avg_ccu_rank_14d: int = Field(None, description="Average CCU rank over the last 14 days")
+    avg_ccu_rank_shift_1m: int = Field(None, description="Average CCU rank shift in the last 1 month")
+    earning_rank: Optional[int] = Field(None, description="Earning rank of the game")
+    genre: str = Field(None, description="Genre of the game")
+    sub_genre: Optional[str] = Field(None, description="Sub-genre of the game")
+    visits: Optional[int] = Field(None, description="Number of visits")
+    players_ccu: int = Field(None, description="Current Concurrent Users (CCU)")
+    platform_share: float = Field(None, description="Platform share percentage")
+    avg_ccu_1d: int = Field(None, description="Average CCU over the last 1 day")
+    avg_ccu_7d: int = Field(None, description="Average CCU over the last 7 days")
+    avg_ccu_14d: int = Field(None, description="Average CCU over the last 14 days")
+    momentum_1d: Optional[str] = Field(None, description="Momentum over the last 1 day")
+    momentum_1w: Optional[str] = Field(None, description="Momentum over the last 1 week")
+    momentum_1m: Optional[str] = Field(None, description="Momentum over the last 1 month")
+    avg_session: str = Field(None, description="Average session duration")
+    favorites: int = Field(None, description="Number of favorites")
+    rating: float = Field(None, description="Rating of the game")
+    up_votes: int = Field(None, description="Number of up votes")
+    down_votes: int = Field(None, description="Number of down votes")
+    created: datetime = Field(None, description="Creation date of the game")
+    extract_date: datetime = Field(None, description="Date when the data was extracted")
