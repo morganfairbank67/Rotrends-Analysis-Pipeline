@@ -1,2 +1,13 @@
-.venv/
+# Playwright authentication states
+auth_state.json
+.auth/
 Scraper/auth_state.json
+Scraper/__pycache__/
+
+# Local environment variables containing credentials
+.env
+
+# Ignore the virtual environment folder
+venv/
+.venv/
+env/
