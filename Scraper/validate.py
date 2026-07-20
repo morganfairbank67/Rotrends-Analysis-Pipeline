@@ -4,8 +4,9 @@ from pydantic import BaseModel, Field, field_validator, model_validator, Validat
 from typing import Any, Optional
 from datetime import datetime
 import uuid
+from datetime import date
 
-from extract import main
+from Scraper.extract import main
 
 class ScrapedGameData(BaseModel):
     game_id: uuid.UUID = Field(default_factory=lambda: uuid.uuid4(), description="Unique identifier for the game")
@@ -21,22 +22,22 @@ class ScrapedGameData(BaseModel):
     earning_rank: Optional[int] = Field(None,alias="Earning Rank", description="Earning rank of the game")
     genre: Optional[str] = Field(None,alias="Genre", description="Genre of the game")
     sub_genre: Optional[str] = Field(None,alias="Sub Genre", description="Sub-genre of the game")
-    visits: Optional[int] = Field(None,alias="Visits", description="Number of visits")
-    players_ccu: int = Field(None,alias="Players (CCU)", description="Current Concurrent Users (CCU)")
-    platform_share: float = Field(None,alias="Platform Share", description="Platform share percentage")
+    visits: Optional[int] = Field(0,alias="Visits", description="Number of visits")
+    players_ccu: int = Field(0, alias="Players (CCU)", description="Current Concurrent Users (CCU)")
+    platform_share: float = Field(0.0, alias="Platform Share", description="Platform share percentage")
     avg_ccu_1d: Optional[int] = Field(None,alias="Avg CCU (1d)", description="Average CCU over the last 1 day")
     avg_ccu_7d: Optional[int] = Field(None,alias="Avg CCU (7d)", description="Average CCU over the last 7 days")
     avg_ccu_14d: Optional[int] = Field(None,alias="Avg CCU (14d)", description="Average CCU over the last 14 days")
     momentum_1d: Optional[str] = Field(None,alias="Momentum (1d)", description="Momentum over the last 1 day")
     momentum_1w: Optional[str] = Field(None,alias="Momentum (1w)", description="Momentum over the last 1 week")
     momentum_1m: Optional[str] = Field(None,alias="Momentum (1m)", description="Momentum over the last 1 month")
-    avg_session: Optional[str] = Field(None,alias="Avg Session", description="Average session duration")
+    avg_session: Optional[float] = Field(None,alias="Avg Session", description="Average session duration")
     favorites: Optional[int] = Field(None,alias="Favorites", description="Number of favorites")
     rating: Optional[float] = Field(None,alias="Rating", description="Rating of the game")
     up_votes: Optional[int] = Field(None,alias="Up Votes", description="Number of up votes")
     down_votes: Optional[int] = Field(None,alias="Down Votes", description="Number of down votes")
     created: Optional[datetime] = Field(None,alias="Created", description="Creation date of the game")
-    extract_date: datetime = Field(None,alias="Date Extracted", description="Date when the data was extracted")
+    extract_date: datetime = Field(date.today(),alias="Date Extracted", description="Date when the data was extracted")
 
     @model_validator(mode="before")
     @classmethod
@@ -122,3 +123,14 @@ if __name__ == "__main__":
             print(f"Validation error: {e}")
     
     print(f"Scraped {len(raw_data)} games, {successCount} games validated.")
+
+    clean_games = []
+    for row in raw_data:
+        try:
+            validated = ScrapedGameData(**row)
+            clean_games.append(validated)
+        except ValidationError:
+            pass
+    from Cloud_Database.database import upload_data
+    upload_data(clean_games)
+    print(f"Uploaded {len(clean_games)} games to Supabase.")
