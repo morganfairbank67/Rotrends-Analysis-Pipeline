@@ -4,6 +4,8 @@ auth_state.json
 Scraper/auth_state.json
 Scraper/__pycache__/
 
+Cloud_Database/__pycache__/
+
 # Local environment variables containing credentials
 .env
 
