@@ -109,6 +109,16 @@ class ScrapedGameData(BaseModel):
              except ValueError:
                  pass
         return value
+    
+    @field_validator('game_name', mode='before')
+    @classmethod
+    def clean_game_name(cls, value: Any) -> Any:
+        if value is None: return value
+        if isinstance(value, str):
+            if '\n' in value:
+                value = value.split('\n')[0]
+            return value.strip()
+        return value
 
 if __name__ == "__main__":
     print("Running Scraper...")
