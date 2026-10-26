@@ -1,12 +1,10 @@
-name: Weekly scrape
+name: Manual scrape
 
 on:
-  schedule:
-    - cron: "0 6 * * 1"
   workflow_dispatch:
 
 concurrency:
-  group: weekly-scrape
+  group: manual-scrape
   cancel-in-progress: false
 
 jobs:
