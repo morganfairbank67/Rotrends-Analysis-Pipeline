@@ -29,18 +29,29 @@ Streamlit app that reads from Supabase and answers where player demand outstrips
 streamlit run streamlit_app.py
 ```
 
-| Page | What it shows |
+| Page | Question it answers |
 |---|---|
-| Overview | Players vs games by genre, treemap of where players are, biggest games |
-| Title keywords | Common words and phrases in game names, with demand vs supply scoring (e.g. "steal a") and whether title tags and emoji matter |
-| Market gaps | Opportunity ranking per genre or sub-genre, whether newcomers can break in, genre heatmap, release age cohorts |
-| Engagement | Session length, like ratio, momentum, monetisation vs player rank, K-Means archetypes, correlations |
+| Start here | Headline findings in plain English and a guide to the other pages |
+| Market overview | Which genres hold more players than their number of games? |
+| Market gaps | Which genres or sub-genres are under-served, and can newcomers break in? |
+| Title keywords | Which words and patterns in game names, like "steal a", have players to spare? |
+| Engagement | Do players stick, who is surging, who earns well, what do game types look like? |
+| Trends | What changed since the last weekly snapshot? Needs two or more snapshots. |
 
-Games that appear in more than one Rotrends list are collapsed to one row before any analysis.
+Games that appear in more than one Rotrends list are collapsed to one row, and games are matched between weeks by cleaned title plus release date so renamed update titles still line up.
 
-**Opportunity score** is the geometric mean of the demand index (share of players divided by share of games) and the typical index (median game in the segment vs the overall median), so one giant hit cannot make a crowded niche look empty.
+**Fair-share multiple** is a group's share of players divided by its share of games. 1x is fair, above 1x is under-served. The ranking also checks the typical game in the group so one giant hit cannot make a crowded niche look empty (shown as hit-driven).
 
 The supply side is only the games in the scraped top lists, so a high score means under-served among top games, not across all of Roblox.
+
+### Weekly scrape
+`.github/workflows/scrape.yml` runs every Monday at 06:00 UTC and can be started by hand from the Actions tab. It runs the scraper headless, validates the rows and upserts them into Supabase.
+
+Add these repository secrets under Settings, Secrets and variables, Actions:
+
+`ROTRENDS_EMAIL`, `ROTRENDS_PASSWORD`, `SUPABASE_URL`, `SUPABASE_KEY`
+
+Run it once manually first to confirm the headless login works from GitHub's servers. Locally the browser window stays visible unless `HEADLESS=true` is set.
 
 ### Docker
 ```bash
