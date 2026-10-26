@@ -82,12 +82,35 @@ def cluster_games(df: pd.DataFrame, k: int = 4, seed: int = 42) -> pd.DataFrame:
     return usable
 
 
+def describe_cluster(row: pd.Series, overall: pd.Series) -> str:
+    size = "Big" if row["players_ccu"] >= overall["players_ccu"] else "Small"
+    session = "long" if row["avg_session"] >= overall["avg_session"] else "short"
+    age = "newer" if row["age_days"] < overall["age_days"] else "older"
+    return f"{size} games, {session} sessions, {age}"
+
+
 def cluster_profile(clustered: pd.DataFrame) -> pd.DataFrame:
     grouped = clustered.groupby("cluster")
     profile = grouped[CLUSTER_FEATURES].median()
+    overall = clustered[CLUSTER_FEATURES].median()
     profile.insert(0, "games", grouped.size())
     profile["top_genre"] = grouped["genre"].agg(lambda s: s.value_counts().index[0])
+    profile["description"] = profile.apply(describe_cluster, axis=1, overall=overall)
     return profile.reset_index()
+
+
+def metric_links(df: pd.DataFrame, target: str, metrics: list[str]) -> pd.DataFrame:
+    rows = []
+    for metric in metrics:
+        if metric == target:
+            continue
+        pair = df[[target, metric]].dropna()
+        if len(pair) < 10:
+            continue
+        rows.append({"metric": metric, "correlation": pair[target].corr(pair[metric],
+                                                                       method="spearman")})
+    table = pd.DataFrame(rows, columns=["metric", "correlation"]).dropna()
+    return table.reindex(table["correlation"].abs().sort_values().index).reset_index(drop=True)
 
 
 def list_overlap(df: pd.DataFrame) -> pd.DataFrame:

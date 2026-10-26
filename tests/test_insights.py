@@ -79,3 +79,15 @@ def test_list_overlap_counts_combinations(games):
     games.loc[:2, "categories"] = "Top 100, Top by Players"
     table = insights.list_overlap(games)
     assert table.iloc[0]["games"] == 21
+
+
+def test_cluster_profile_describes_each_group(games):
+    profile = insights.cluster_profile(insights.cluster_games(games, k=3))
+    assert profile["description"].str.contains("sessions").all()
+
+
+def test_metric_links_orders_by_strength(games):
+    links = insights.metric_links(games, "players_ccu", ["avg_session", "like_ratio", "visits"])
+    assert links["correlation"].abs().is_monotonic_increasing
+    assert "players_ccu" not in links["metric"].tolist()
+    assert links.loc[links["metric"] == "avg_session", "correlation"].iloc[0] > 0.9
