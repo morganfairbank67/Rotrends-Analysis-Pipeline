@@ -50,3 +50,23 @@ def test_latest_snapshot_keeps_newest_extract(raw_games):
     out = prepare.latest_snapshot(prepare.prepare(raw_games))
     assert (out["extract_date"] == out["extract_date"].max()).all()
     assert len(out) == 4
+
+
+def test_game_key_ignores_title_tags_and_emoji():
+    assert prepare.core_title("[UPD] 🔥 Fish It! 🐟") == "fish it"
+    assert prepare.core_title("Fish It!") == "fish it"
+
+
+def test_same_game_with_changed_title_collapses(raw_games):
+    rows = raw_games.head(2).copy()
+    rows["game_name"] = ["Fish It!", "[UPD] Fish It! 🐟"]
+    out = prepare.collapse_list_appearances(rows)
+    assert len(out) == 1
+    assert out.iloc[0]["list_count"] == 2
+
+
+def test_same_title_with_different_release_date_stays_separate(raw_games):
+    rows = raw_games.head(2).copy()
+    rows["game_name"] = "Obby"
+    rows["created"] = ["2025-01-01", "2026-01-01"]
+    assert len(prepare.collapse_list_appearances(rows)) == 2
