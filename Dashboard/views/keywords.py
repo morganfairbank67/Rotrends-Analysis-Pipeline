@@ -37,7 +37,7 @@ else:
     pick = open_phrases.iloc[0]
     ui.takeaway(
         f"**\"{pick['phrase']}\"** is used by {int(pick['games'])} games that together hold "
-        f"{int(pick['total_ccu']):,} players, {pick['demand_index']:.1f}x the share you would "
+        f"{int(pick['total_ccu']):,} players, {ui.times(pick['demand_index'])} the share you would "
         "expect for that many games."
     )
 
@@ -74,7 +74,7 @@ with gap_tab:
         y="phrase",
         color="verdict",
         orientation="h",
-        text=best["demand_index"].map(lambda v: f"{v:.1f}x"),
+        text=best["demand_index"].map(ui.times),
         color_discrete_map=charts.VERDICT_COLORS,
         category_orders={"verdict": charts.VERDICT_ORDER},
         hover_data={"games": True, "total_ccu": ":,", "top_game": True, "demand_index": False,

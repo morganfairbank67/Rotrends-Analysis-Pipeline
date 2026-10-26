@@ -9,6 +9,10 @@ def compact(value: float) -> str:
     return f"{value:,.0f}"
 
 
+def times(value: float) -> str:
+    return "<0.1x" if value < 0.05 else f"{value:.1f}x"
+
+
 def page_header(title: str, question: str) -> None:
     st.title(title)
     st.markdown(f"##### {question}")

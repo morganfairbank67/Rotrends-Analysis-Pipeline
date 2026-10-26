@@ -25,8 +25,8 @@ if table.empty:
 best = table.sort_values("demand_index", ascending=False).iloc[0]
 worst = table.sort_values("demand_index").iloc[0]
 ui.takeaway(
-    f"**{best[column]}** has {best['demand_index']:.1f}x its fair share of players "
-    f"({best['verdict'].lower()}). **{worst[column]}** has just {worst['demand_index']:.1f}x, "
+    f"**{best[column]}** has {ui.times(best['demand_index'])} its fair share of players "
+    f"({best['verdict'].lower()}). **{worst[column]}** has just {ui.times(worst['demand_index'])}, "
     f"so its {int(worst['games'])} games are splitting a small audience."
 )
 
@@ -46,7 +46,7 @@ with ranking_tab:
         y=column,
         color="verdict",
         orientation="h",
-        text=ranked["demand_index"].map(lambda v: f"{v:.1f}x"),
+        text=ranked["demand_index"].map(ui.times),
         color_discrete_map=charts.VERDICT_COLORS,
         category_orders={"verdict": charts.VERDICT_ORDER},
         hover_data={"games": True, "total_ccu": ":,", "demand_index": False, "verdict": False},
