@@ -64,7 +64,22 @@ def app(monkeypatch):
 def test_app_renders_without_exceptions(app):
     app.run()
     assert not app.exception
-    assert len(app.metric) >= 5
+    assert len(app.metric) == 4
+
+
+def test_home_shows_headline_findings(app):
+    app.run()
+    assert not app.exception
+    assert any("What the data says" in h.value for h in app.subheader)
+
+
+def test_reset_button_clears_genre_filter(app):
+    app.run()
+    app.sidebar.multiselect[0].set_value(["Action"]).run()
+    assert app.metric[0].value == "30"
+    app.sidebar.button[0].click().run()
+    assert not app.exception
+    assert app.metric[0].value == "120"
 
 
 def test_sidebar_genre_filter_narrows_games(app):
