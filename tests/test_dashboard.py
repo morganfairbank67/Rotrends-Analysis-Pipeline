@@ -93,7 +93,10 @@ def test_keywords_page_renders(app):
     app.run()
     app.switch_page("Dashboard/views/keywords.py").run()
     assert not app.exception
-    assert len(app.dataframe) >= 2
+    assert len(app.dataframe) >= 1
+    assert len(app.metric) == 3
+    app.selectbox[0].set_value("Single words").run()
+    assert not app.exception
 
 
 def test_market_gaps_page_renders_for_both_levels(app):
