@@ -17,7 +17,7 @@ CONFIG = {"displayModeBar": False}
 def style(fig: go.Figure, height: int = 420) -> go.Figure:
     fig.update_layout(
         height=height,
-        margin=dict(l=8, r=8, t=56, b=8),
+        margin=dict(l=8, r=8, t=44, b=8),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(size=13),

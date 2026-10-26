@@ -38,6 +38,7 @@ stick_tab, momentum_tab, money_tab, types_tab, drivers_tab = st.tabs(
 with stick_tab:
     ui.section("How long do sessions last?", "Minutes per visit, by genre. The line is the median.")
     sessions = games.dropna(subset=["avg_session"])
+    sessions = sessions[sessions["genre"] != "Unknown"]
     order = sessions.groupby("genre")["avg_session"].median().sort_values().index.tolist()
     fig = px.box(
         sessions,
@@ -97,7 +98,7 @@ with momentum_tab:
         fig.update_yaxes(title=None)
         charts.show(fig, 400)
 
-    mix = momentum_mix(games)
+    mix = momentum_mix(games[games["genre"] != "Unknown"])
     if not mix.empty:
         ui.section("Momentum by genre", "Share of each genre's games by one-month momentum.")
         long = mix.reset_index().melt(id_vars="genre", var_name="momentum", value_name="share")
