@@ -94,7 +94,7 @@ def scrape_category(page: Page, category: str, url: str, columns: list[str]) -> 
 
 def main():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=os.getenv("HEADLESS", "").lower() == "true")
         
         # Force a fresh login every time
         context = browser.new_context()
