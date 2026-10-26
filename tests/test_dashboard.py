@@ -79,3 +79,13 @@ def test_keywords_page_renders(app):
     app.switch_page("Dashboard/views/keywords.py").run()
     assert not app.exception
     assert len(app.dataframe) >= 2
+
+
+def test_market_gaps_page_renders_for_both_levels(app):
+    app.run()
+    app.switch_page("Dashboard/views/market_gaps.py").run()
+    assert not app.exception
+    app.radio[0].set_value("Sub-genre").run()
+    assert not app.exception
+    app.radio[1].set_value("Number of games").run()
+    assert not app.exception
