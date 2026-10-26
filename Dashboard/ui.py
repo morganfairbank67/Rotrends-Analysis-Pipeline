@@ -13,26 +13,19 @@ def times(value: float) -> str:
     return "<0.1x" if value < 0.05 else f"{value:.1f}x"
 
 
-def page_header(title: str, question: str) -> None:
+def page_header(title: str, subtitle: str | None = None) -> None:
     st.title(title)
-    st.markdown(f"##### {question}")
+    if subtitle:
+        st.markdown(f'<div class="muted">{subtitle}</div>', unsafe_allow_html=True)
 
 
-def takeaway(text: str) -> None:
-    st.info(text, icon="💡")
-
-
-def how_to_read(text: str) -> None:
-    with st.expander("How to read this"):
-        st.markdown(text)
-
-
-def section(title: str, blurb: str) -> None:
+def section(title: str, blurb: str | None = None) -> None:
     st.subheader(title)
-    st.caption(blurb)
+    if blurb:
+        st.caption(blurb)
 
 
 def require_games(games) -> None:
     if games.empty:
-        st.warning("No games match your filters. Widen them in the sidebar or press Reset filters.")
+        st.warning("No games match the current filters.")
         st.stop()

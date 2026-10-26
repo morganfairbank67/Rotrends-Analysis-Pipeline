@@ -29,14 +29,15 @@ Streamlit app that reads from Supabase and answers where player demand outstrips
 streamlit run streamlit_app.py
 ```
 
-| Page | Question it answers |
+| Page | Contents |
 |---|---|
-| Start here | Headline findings in plain English and a guide to the other pages |
-| Market overview | Which genres hold more players than their number of games? |
-| Market gaps | Which genres or sub-genres are under-served, and can newcomers break in? |
-| Title keywords | Which words and patterns in game names, like "steal a", have players to spare? |
-| Engagement | Do players stick, who is surging, who earns well, what do game types look like? |
-| Trends | What changed since the last weekly snapshot? Needs two or more snapshots. |
+| Overview | Headline signals, player share vs game share by genre, treemap, largest games |
+| Market gaps | Fair-share ranking, entry openness, genre map and release-age mix |
+| Title keywords | Phrase frequency, demand relative to supply, per-phrase detail, title features |
+| Engagement | Retention, momentum, monetisation, game segments and drivers |
+| Trends | Change between weekly snapshots. Needs two or more snapshots. |
+
+The theme follows the system setting and can be switched to light or dark from the menu in the top right.
 
 Games that appear in more than one Rotrends list are collapsed to one row, and games are matched between weeks by cleaned title plus release date so renamed update titles still line up.
 

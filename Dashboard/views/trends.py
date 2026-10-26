@@ -10,16 +10,12 @@ from Dashboard.data import current_history
 
 history = current_history()
 
-ui.page_header("Trends", "What has changed since the last weekly snapshot?")
+ui.page_header("Trends", "Change between snapshots")
 ui.require_games(history)
 
 dates = snapshot_dates(history)
 if len(dates) < 2:
-    st.info(
-        "Trends need at least two weekly snapshots to compare. A new snapshot is collected "
-        "automatically every Monday, so check back after the next run.",
-        icon="⏳",
-    )
+    st.info("At least two snapshots are required for trend analysis.")
     st.stop()
 
 wow = week_over_week(history)
@@ -36,7 +32,7 @@ cols[0].metric("Players across tracked games", ui.compact(totals["total_ccu"].il
 cols[1].metric("New in the lists", int((wow["status"] == "New in the lists").sum()))
 cols[2].metric("Dropped out", int((wow["status"] == "Dropped out").sum()))
 
-ui.section("Players over time", "Total players online across the tracked games, by genre.")
+ui.section("Concurrent players by genre")
 by_genre = snapshot_totals(history, by="genre")
 biggest = by_genre.groupby("genre")["total_ccu"].sum().nlargest(6).index
 fig = px.line(
@@ -51,7 +47,7 @@ fig.update_xaxes(title=None)
 fig.update_yaxes(title="Players online")
 charts.show(fig, 420)
 
-ui.section("Biggest movers", "Games that were in both snapshots, by change in players online.")
+ui.section("Largest changes in players", "Games present in both snapshots")
 stayed = wow[wow["status"] == "Still listed"].copy()
 stayed["game"] = stayed["game_name"].map(display_title)
 movers = pd.concat([
@@ -80,7 +76,7 @@ with new_col:
         hide_index=True,
         width="stretch",
         column_config={"game": "Game", "genre": "Genre",
-                       "ccu_now": st.column_config.NumberColumn("Players now", format="%d")},
+                       "ccu_now": st.column_config.NumberColumn("Players", format="%d")},
     )
 with gone_col:
     st.markdown("**Dropped out**")
@@ -92,7 +88,7 @@ with gone_col:
                        "ccu_before": st.column_config.NumberColumn("Players before", format="%d")},
     )
 
-ui.section("Track a title pattern", "Is a phrase gaining or losing players week by week?")
+ui.section("Title phrase trend")
 phrases = phrase_table(history[history["extract_date"] == latest], min_games=2)["phrase"].tolist()
 if phrases:
     choice = st.selectbox("Phrase", phrases)

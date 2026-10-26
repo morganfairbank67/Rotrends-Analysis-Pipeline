@@ -2,38 +2,39 @@ import plotly.express as px
 import streamlit as st
 
 from Analytics.market import segment_table
+from Analytics.summary import headline_findings
 from Dashboard import charts, ui
-from Dashboard.data import current_games
+from Dashboard.data import current_games, current_history
 
 games = current_games()
+history = current_history()
 
-ui.page_header("Market overview", "Where are the players, and how many games share them?")
 ui.require_games(games)
 
-recent = (games["age_days"] <= 90).mean()
-cols = st.columns(4)
-cols[0].metric("Games", f"{len(games):,}")
-cols[1].metric("Players online", ui.compact(games["players_ccu"].sum()))
-cols[2].metric("Typical game has", f"{games['players_ccu'].median():,.0f} players")
-cols[3].metric("Released in last 90 days", f"{recent:.0%}")
+latest = games["extract_date"].max().strftime("%d %b %Y")
+ui.page_header(
+    "Roblox market analysis",
+    f"Snapshot {latest}  |  {len(games):,} games  |  {ui.compact(games['players_ccu'].sum())} "
+    "concurrent players",
+)
+
+findings = headline_findings(games)
+if findings:
+    for column, finding in zip(st.columns(len(findings)), findings, strict=True):
+        with column.container(border=True, height=185):
+            st.caption(finding.label)
+            st.markdown(f"**{finding.headline}**")
+            st.caption(finding.detail)
 
 genres = segment_table(games, "genre")
+genres = genres[genres["genre"] != "Unknown"]
 genres["gap"] = (genres["ccu_share"] - genres["game_share"]) * 100
 genres = genres.sort_values("gap")
 
-ui.section(
-    "Which genres hold more players than their number of games?",
-    "Share of players minus share of games, in percentage points.",
+ui.section("Player share minus game share, by genre", "Percentage points")
+genres["side"] = genres["gap"].map(
+    lambda v: "More players than games" if v >= 0 else "More games than players"
 )
-leader = genres.iloc[-1]
-trailer = genres.iloc[0]
-ui.takeaway(
-    f"**{leader['genre']}** holds {leader['gap']:.0f} points more of the audience than its share "
-    f"of games. **{trailer['genre']}** is the reverse, with {abs(trailer['gap']):.0f} points "
-    "fewer players than its game count would suggest."
-)
-genres["side"] = genres["gap"].map(lambda v: "More players than games" if v >= 0 else
-                                   "More games than players")
 fig = px.bar(
     genres,
     x="gap",
@@ -41,19 +42,18 @@ fig = px.bar(
     color="side",
     orientation="h",
     text=genres["gap"].map(lambda v: f"{v:+.1f}"),
-    color_discrete_map={"More players than games": charts.SERIES[0],
-                        "More games than players": "#8a8984"},
+    color_discrete_map={
+        "More players than games": charts.SERIES[0],
+        "More games than players": charts.MUTED,
+    },
     hover_data={"games": True, "total_ccu": ":,", "gap": False, "side": False},
 )
 fig.update_traces(textposition="outside", cliponaxis=False)
-fig.update_xaxes(title="Percentage points (right = under-served)", zeroline=True)
+fig.update_xaxes(title=None)
 fig.update_yaxes(title=None)
-charts.show(fig, max(360, 34 * len(genres) + 100))
+charts.show(fig, max(340, 32 * len(genres) + 90))
 
-ui.section(
-    "Where do the players actually play?",
-    "Box size is players online. Click a genre to zoom.",
-)
+ui.section("Concurrent players by genre and sub-genre")
 tree = games.groupby(["genre", "sub_genre"], as_index=False)["players_ccu"].sum()
 fig = px.treemap(
     tree,
@@ -62,11 +62,12 @@ fig = px.treemap(
     color="genre",
     color_discrete_sequence=charts.SERIES,
 )
-fig.update_traces(hovertemplate="%{label}<br>%{value:,} players<extra></extra>",
-                  textinfo="label+percent root")
-charts.show(fig, 520)
+fig.update_traces(
+    hovertemplate="%{label}<br>%{value:,} players<extra></extra>", textinfo="label+percent root"
+)
+charts.show(fig, 500)
 
-ui.section("Biggest games right now", "The 15 games with the most players online.")
+ui.section("Largest games")
 top = games.nlargest(15, "players_ccu")[
     ["display_name", "genre", "sub_genre", "players_ccu", "avg_session", "like_ratio", "age_days"]
 ]
@@ -78,10 +79,11 @@ st.dataframe(
         "display_name": "Game",
         "genre": "Genre",
         "sub_genre": "Sub-genre",
-        "players_ccu": st.column_config.NumberColumn("Players now", format="%d"),
+        "players_ccu": st.column_config.NumberColumn("Players", format="%d"),
         "avg_session": st.column_config.NumberColumn("Avg session (min)", format="%.1f"),
-        "like_ratio": st.column_config.ProgressColumn("Liked", min_value=0, max_value=1,
-                                                      format="percent"),
+        "like_ratio": st.column_config.ProgressColumn(
+            "Liked", min_value=0, max_value=1, format="percent"
+        ),
         "age_days": st.column_config.NumberColumn("Age (days)", format="%d"),
     },
 )
