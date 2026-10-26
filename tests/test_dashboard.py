@@ -72,3 +72,10 @@ def test_sidebar_genre_filter_narrows_games(app):
     app.sidebar.multiselect[0].set_value(["Action"]).run()
     assert not app.exception
     assert app.metric[0].value == "30"
+
+
+def test_keywords_page_renders(app):
+    app.run()
+    app.switch_page("Dashboard/views/keywords.py").run()
+    assert not app.exception
+    assert len(app.dataframe) >= 2

@@ -15,5 +15,6 @@ st.sidebar.caption(f"{raw_rows:,} raw rows across all snapshots")
 
 pages = [
     st.Page("Dashboard/views/overview.py", title="Overview", icon="📊", default=True),
+    st.Page("Dashboard/views/keywords.py", title="Title keywords", icon="🔤"),
 ]
 st.navigation(pages).run()
