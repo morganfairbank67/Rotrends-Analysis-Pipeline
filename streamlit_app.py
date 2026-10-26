@@ -17,5 +17,6 @@ pages = [
     st.Page("Dashboard/views/overview.py", title="Overview", icon="📊", default=True),
     st.Page("Dashboard/views/keywords.py", title="Title keywords", icon="🔤"),
     st.Page("Dashboard/views/market_gaps.py", title="Market gaps", icon="🎯"),
+    st.Page("Dashboard/views/engagement.py", title="Engagement", icon="📈"),
 ]
 st.navigation(pages).run()

@@ -89,3 +89,11 @@ def test_market_gaps_page_renders_for_both_levels(app):
     assert not app.exception
     app.radio[1].set_value("Number of games").run()
     assert not app.exception
+
+
+def test_engagement_page_renders_and_reclusters(app):
+    app.run()
+    app.switch_page("Dashboard/views/engagement.py").run()
+    assert not app.exception
+    app.slider[-1].set_value(3).run()
+    assert not app.exception
