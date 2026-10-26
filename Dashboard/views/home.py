@@ -39,15 +39,19 @@ else:
     st.info("Not enough games under the current filters to pick out highlights.")
 
 st.subheader("Where to go next")
-left, right = st.columns(2)
+left, middle, right = st.columns(3)
 with left.container(border=True):
     st.markdown("**Is a niche under-served?**")
     st.write("Compare each genre's share of players with its share of games.")
     st.page_link("Dashboard/views/market_gaps.py", label="Open Market gaps", icon="🎯")
-with right.container(border=True):
+with middle.container(border=True):
     st.markdown("**What are games called?**")
     st.write("See which words and patterns, like \"steal a\", pull the most players.")
     st.page_link("Dashboard/views/keywords.py", label="Open Title keywords", icon="🔤")
+with right.container(border=True):
+    st.markdown("**Is something taking off?**")
+    st.write("Track what changed since the last weekly snapshot.")
+    st.page_link("Dashboard/views/trends.py", label="Open Trends", icon="📈")
 
 with st.expander("Plain-English glossary"):
     st.markdown(

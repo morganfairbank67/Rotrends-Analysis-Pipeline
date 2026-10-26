@@ -25,6 +25,7 @@ pages = {
     ],
     "Go deeper": [
         st.Page("Dashboard/views/engagement.py", title="Engagement", icon="🎮"),
+        st.Page("Dashboard/views/trends.py", title="Trends", icon="📈"),
     ],
 }
 st.navigation(pages).run()

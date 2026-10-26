@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from Analytics.prepare import prepare
-from Cloud_Database.recieveData import get_data
+from Cloud_Database import recieveData
 
 GAMES_KEY = "games"
 HISTORY_KEY = "history"
@@ -11,7 +11,7 @@ FILTER_DEFAULTS = {"f_genres": [], "f_floor": 0, "f_new_only": False, "f_snapsho
 
 @st.cache_data(ttl=600, show_spinner="Loading games from Supabase")
 def load_games() -> tuple[pd.DataFrame, int]:
-    raw = get_data()
+    raw = recieveData.get_data()
     return prepare(raw), len(raw)
 
 

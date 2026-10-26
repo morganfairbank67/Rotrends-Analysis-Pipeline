@@ -112,3 +112,30 @@ def test_engagement_page_renders_and_reclusters(app):
     assert not app.exception
     app.slider[-1].set_value(3).run()
     assert not app.exception
+
+
+def two_week_raw():
+    latest = synthetic_raw()
+    earlier = latest.copy()
+    earlier["extract_date"] = "2026-07-23"
+    earlier["players_ccu"] = (earlier["players_ccu"] * 0.8).astype(int)
+    earlier = earlier.iloc[10:]
+    return pd.concat([earlier, latest], ignore_index=True)
+
+
+def test_trends_page_asks_for_more_data_with_one_snapshot(app):
+    app.run()
+    app.switch_page("Dashboard/views/trends.py").run()
+    assert not app.exception
+    assert any("two weekly snapshots" in i.value for i in app.info)
+
+
+def test_trends_page_compares_two_snapshots(monkeypatch):
+    monkeypatch.setattr(recieveData, "get_data", two_week_raw)
+    st.cache_data.clear()
+    entry = Path(__file__).resolve().parent.parent / "streamlit_app.py"
+    app = AppTest.from_file(str(entry), default_timeout=60).run()
+    app.switch_page("Dashboard/views/trends.py").run()
+    assert not app.exception
+    assert len(app.metric) == 3
+    assert len(app.dataframe) == 2
