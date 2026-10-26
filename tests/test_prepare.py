@@ -70,3 +70,9 @@ def test_same_title_with_different_release_date_stays_separate(raw_games):
     rows["game_name"] = "Obby"
     rows["created"] = ["2025-01-01", "2026-01-01"]
     assert len(prepare.collapse_list_appearances(rows)) == 2
+
+
+def test_display_title_strips_tags_and_emoji_but_keeps_plain_titles():
+    assert prepare.display_title("[W2] +1 Speed Shinobi Escape") == "1 Speed Shinobi Escape"
+    assert prepare.display_title("🌻 [PETS] Pet Simulator 99! ⚔️") == "Pet Simulator 99!"
+    assert prepare.display_title("[UPD]") == "[UPD]"

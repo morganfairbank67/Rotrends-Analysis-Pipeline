@@ -40,7 +40,7 @@ def classify(row: pd.Series) -> str:
     if row["demand_index"] >= 1.5:
         return "Underserved" if row["typical_index"] >= 1 else "Hit-driven"
     if row["demand_index"] < 0.75:
-        return "Saturated"
+        return "Crowded"
     return "Balanced"
 
 
