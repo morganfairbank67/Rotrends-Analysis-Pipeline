@@ -1,7 +1,5 @@
 -r requirements-dashboard.txt
-playwright==1.61.0
-pydantic==2.13.4
-python-dateutil==2.9.0.post0
+-r requirements-scraper.txt
 nltk
 matplotlib
 seaborn
