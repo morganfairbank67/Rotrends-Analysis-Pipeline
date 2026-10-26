@@ -96,10 +96,9 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=os.getenv("HEADLESS", "").lower() == "true")
         
-        # Force a fresh login every time
         context = browser.new_context()
         page = context.new_page()
-        login(page)
+        # login(page)
 
         columns = ["Game Name", "Global Rank", "Global Rank Shift (1d)", "Global Rank Shift (1w)", "Global Rank Shift (1m)", "Avg CCU Rank (1d)", "Avg CCU Rank (7d)", "Avg CCU Rank (14d)", "Avg CCU Rank Shift (1d)", "Earning Rank", "Genre", "Sub Genre", "Visits", "Players (CCU)", "Platform Share", "Avg CCU (1d)", "Avg CCU (7d)", "Avg CCU (14d)", "Momentum (1d)", "Momentum (1w)", "Momentum (1m)", "Avg Session", "Favorites", "Rating", "Up Votes", "Down Votes", "Created", "Extract Date"]
 
