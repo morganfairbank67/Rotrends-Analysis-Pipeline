@@ -64,29 +64,29 @@ def app(monkeypatch):
 def test_app_renders_without_exceptions(app):
     app.run()
     assert not app.exception
-    assert len(app.metric) == 4
+    assert any("Largest games" in h.value for h in app.subheader)
 
 
-def test_home_shows_headline_findings(app):
+def test_overview_shows_headline_cards(app):
     app.run()
     assert not app.exception
-    assert any("What the data says" in h.value for h in app.subheader)
+    assert len(app.caption) >= 3
 
 
 def test_reset_button_clears_genre_filter(app):
     app.run()
     app.sidebar.multiselect[0].set_value(["Action"]).run()
-    assert app.metric[0].value == "30"
+    assert "30 games" in app.sidebar.caption[-1].value
     app.sidebar.button[0].click().run()
     assert not app.exception
-    assert app.metric[0].value == "120"
+    assert "120 games" in app.sidebar.caption[-1].value
 
 
 def test_sidebar_genre_filter_narrows_games(app):
     app.run()
     app.sidebar.multiselect[0].set_value(["Action"]).run()
     assert not app.exception
-    assert app.metric[0].value == "30"
+    assert "30 games" in app.sidebar.caption[-1].value
 
 
 def test_keywords_page_renders(app):
@@ -105,7 +105,7 @@ def test_market_gaps_page_renders_for_both_levels(app):
     assert not app.exception
     app.radio[0].set_value("Sub-genre").run()
     assert not app.exception
-    app.radio[1].set_value("Number of games").run()
+    app.radio[1].set_value("Games").run()
     assert not app.exception
 
 
@@ -130,7 +130,7 @@ def test_trends_page_asks_for_more_data_with_one_snapshot(app):
     app.run()
     app.switch_page("Dashboard/views/trends.py").run()
     assert not app.exception
-    assert any("two weekly snapshots" in i.value for i in app.info)
+    assert any("two snapshots" in i.value for i in app.info)
 
 
 def test_trends_page_compares_two_snapshots(monkeypatch):

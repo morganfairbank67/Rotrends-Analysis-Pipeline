@@ -27,16 +27,15 @@ LINK_LABELS = {
 
 games = current_games()
 
-ui.page_header("Engagement", "How do players behave once they arrive, and who is gaining ground?")
+ui.page_header("Engagement", "Retention, momentum and monetisation")
 ui.require_games(games)
 
 stick_tab, momentum_tab, money_tab, types_tab, drivers_tab = st.tabs(
-    ["Do players stick?", "Rising and falling", "Who earns well?", "Game types",
-     "What goes with size"]
+    ["Retention", "Momentum", "Monetisation", "Segments", "Drivers"]
 )
 
 with stick_tab:
-    ui.section("How long do sessions last?", "Minutes per visit, by genre. The line is the median.")
+    ui.section("Average session length by genre", "Minutes, median marked")
     sessions = games.dropna(subset=["avg_session"])
     sessions = sessions[sessions["genre"] != "Unknown"]
     order = sessions.groupby("genre")["avg_session"].median().sort_values().index.tolist()
@@ -51,10 +50,8 @@ with stick_tab:
     fig.update_xaxes(title="Average session (minutes)")
     fig.update_yaxes(title=None)
     charts.show(fig, max(380, 34 * len(order) + 100))
-    if order:
-        ui.takeaway(f"**{order[-1]}** games keep players the longest, **{order[0]}** the shortest.")
 
-    ui.section("Are well-liked games bigger?", "Each dot is a game.")
+    ui.section("Like ratio against concurrent players")
     liked = games.dropna(subset=["like_ratio"])
     fig = px.scatter(
         liked,
@@ -71,12 +68,9 @@ with stick_tab:
     charts.show(fig, 460)
 
 with momentum_tab:
-    floor = st.slider("Ignore games with fewer players than", 0, 5000, 500, step=100)
+    floor = st.slider("Minimum players", 0, 5000, 500, step=100)
     rising, fading = top_movers(games, min_ccu=floor, n=10)
-    ui.section(
-        "Biggest recent movers",
-        "Players online now compared with the 14-day average. 2x means double.",
-    )
+    ui.section("Players now relative to 14-day average")
     for title, frame, colour in (("Surging", rising, charts.SERIES[0]),
                                   ("Fading", fading, charts.SERIES[1])):
         if frame.empty:
@@ -100,7 +94,7 @@ with momentum_tab:
 
     mix = momentum_mix(games[games["genre"] != "Unknown"])
     if not mix.empty:
-        ui.section("Momentum by genre", "Share of each genre's games by one-month momentum.")
+        ui.section("One-month momentum mix by genre")
         long = mix.reset_index().melt(id_vars="genre", var_name="momentum", value_name="share")
         fig = px.bar(
             long,
@@ -119,10 +113,7 @@ with money_tab:
     if paid.empty:
         st.info("No earning ranks in the current selection.")
     else:
-        ui.section(
-            "Players versus earnings",
-            "Below the dotted line, a game earns better than its player count suggests.",
-        )
+        ui.section("Player rank against earning rank", "Below the line: earns above audience rank")
         fig = px.scatter(
             paid,
             x="avg_ccu_rank_14d",
@@ -140,31 +131,24 @@ with money_tab:
         fig.update_xaxes(title="Player rank (1 is best)")
         fig.update_yaxes(title="Earning rank (1 is best)")
         charts.show(fig, 500)
-        st.caption(
-            "Both axes are logarithmic. Earning ranks exist only for games on the earning list."
-        )
         leaders = monetisation_leaders(paid, n=10).merge(
             games[["game_name", "display_name"]].drop_duplicates("game_name"), on="game_name"
         )
-        st.markdown("**Games that earn far better than their player rank**")
+        st.markdown("**Strongest earners relative to player rank**")
         st.dataframe(
             leaders[["display_name", "genre", "players_ccu", "avg_ccu_rank_14d", "earning_rank"]],
             hide_index=True,
             width="stretch",
             column_config={
                 "display_name": "Game", "genre": "Genre",
-                "players_ccu": st.column_config.NumberColumn("Players now", format="%d"),
+                "players_ccu": st.column_config.NumberColumn("Players", format="%d"),
                 "avg_ccu_rank_14d": st.column_config.NumberColumn("Player rank", format="%d"),
                 "earning_rank": st.column_config.NumberColumn("Earning rank", format="%d"),
             },
         )
 
 with types_tab:
-    ui.section(
-        "Groups of similar games",
-        "Games are grouped automatically by size, session length, likes, favourites and age.",
-    )
-    k = st.slider("Number of groups", 2, 8, 4)
+    k = st.slider("Segments", 2, 8, 4)
     try:
         clustered = cluster_games(games, k)
     except ValueError:
@@ -204,10 +188,7 @@ with types_tab:
         )
 
 with drivers_tab:
-    ui.section(
-        "What goes with having more players?",
-        "Rank correlation with players online. Right means more players, left means fewer.",
-    )
+    ui.section("Rank correlation with concurrent players")
     links = metric_links(games, "players_ccu", list(LINK_LABELS))
     if links.empty:
         st.info("Not enough data to compare. Widen the sidebar filters.")
@@ -222,13 +203,9 @@ with drivers_tab:
             color="direction",
             orientation="h",
             text=links["correlation"].map(lambda v: f"{v:+.2f}"),
-            color_discrete_map={"More players": charts.SERIES[0], "Fewer players": "#8a8984"},
+            color_discrete_map={"More players": charts.SERIES[0], "Fewer players": charts.MUTED},
         )
         fig.update_traces(textposition="outside", cliponaxis=False)
         fig.update_xaxes(title="Correlation (-1 to +1)", range=[-1, 1])
         fig.update_yaxes(title=None)
         charts.show(fig, max(360, 40 * len(links) + 120))
-        st.caption(
-            "A link is not a cause. A larger game may simply have more votes and visits "
-            "because it has more players."
-        )

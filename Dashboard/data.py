@@ -24,43 +24,31 @@ def sidebar_filters(games: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     for key, value in FILTER_DEFAULTS.items():
         st.session_state.setdefault(key, value)
 
-    st.sidebar.markdown("### Filter the data")
+    st.sidebar.markdown("### Filters")
 
     genres = sorted(games["genre"].unique())
-    picked = st.sidebar.multiselect(
-        "Genre", genres, key="f_genres", placeholder="All genres",
-        help="Leave empty to include every genre.",
-    )
+    picked = st.sidebar.multiselect("Genre", genres, key="f_genres", placeholder="All genres")
     if picked:
         games = games[games["genre"].isin(picked)]
 
     top = int(games["players_ccu"].max()) if len(games) else 0
-    floor = st.sidebar.slider(
-        "Minimum players online now", 0, max(top, 1), key="f_floor", step=50,
-        help="Hide small games. 0 keeps everything.",
-    )
+    floor = st.sidebar.slider("Minimum players", 0, max(top, 1), key="f_floor", step=50)
     games = games[games["players_ccu"] >= floor]
 
-    new_only = st.sidebar.toggle(
-        "Only games under 90 days old", key="f_new_only",
-        help="Focus on recent releases to see what newcomers are doing.",
-    )
+    new_only = st.sidebar.toggle("Released in last 90 days", key="f_new_only")
     if new_only:
         games = games[games["age_days"] <= 90]
 
     history = games
     dates = sorted(games["extract_date"].dropna().dt.date.unique(), reverse=True)
     if len(dates) > 1:
-        chosen = st.sidebar.selectbox(
-            "Weekly snapshot", dates, key="f_snapshot",
-            help="Each weekly scrape is one snapshot. Trends compares them all.",
-        )
+        chosen = st.sidebar.selectbox("Snapshot", dates, key="f_snapshot")
         current = games[games["extract_date"].dt.date == chosen]
     else:
         current = games
 
     st.sidebar.button("Reset filters", on_click=reset_filters, width="stretch")
-    st.sidebar.caption(f"Showing {len(current):,} games")
+    st.sidebar.caption(f"{len(current):,} games. Scope: Rotrends top lists.")
     return history, current
 
 
