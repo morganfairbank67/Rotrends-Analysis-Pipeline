@@ -6,7 +6,7 @@ VERDICT_COLORS = {
     "Underserved": "#2a78d6",
     "Hit-driven": "#eb6834",
     "Balanced": "#1baf7a",
-    "Saturated": "#8a8984",
+    "Crowded": "#8a8984",
 }
 VERDICT_ORDER = list(VERDICT_COLORS)
 GRID = "rgba(128,128,128,0.2)"

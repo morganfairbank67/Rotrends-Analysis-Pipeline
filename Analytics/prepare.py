@@ -6,19 +6,31 @@ import pandas as pd
 
 BRACKETED = re.compile(r"\[[^\]]*\]|\([^)]*\)")
 NON_WORD = re.compile(r"[\W_]+")
+EMOJI_JOINERS = {0xFE0F, 0x200D}
 IDENTITY_COLUMNS = ["game_key", "extract_date"]
 AGE_BINS = [-1, 30, 90, 365, 1095, np.inf]
 AGE_LABELS = ["< 1 month", "1-3 months", "3-12 months", "1-3 years", "3+ years"]
 
 
 def is_emoji(char: str) -> bool:
-    return unicodedata.category(char) == "So" or ord(char) >= 0x1F000
+    return (
+        unicodedata.category(char) == "So"
+        or ord(char) >= 0x1F000
+        or ord(char) in EMOJI_JOINERS
+    )
 
 
 def core_title(title: str) -> str:
     text = BRACKETED.sub(" ", str(title).lower())
     text = "".join(" " if is_emoji(c) else c for c in text)
     return NON_WORD.sub(" ", text).strip()
+
+
+def display_title(title: str) -> str:
+    text = BRACKETED.sub(" ", str(title))
+    text = "".join(" " if is_emoji(c) else c for c in text)
+    cleaned = re.sub(r"\s+", " ", text).strip(" -|:+")
+    return cleaned or str(title)
 
 
 def add_game_key(df: pd.DataFrame) -> pd.DataFrame:
@@ -58,6 +70,7 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     out["share_pct"] = out["platform_share"] * 100
 
     titles = out["game_name"].fillna("")
+    out["display_name"] = titles.map(display_title)
     out["title_length"] = titles.str.len()
     out["has_emoji"] = titles.map(lambda t: any(is_emoji(c) for c in t))
     out["has_brackets"] = titles.str.contains(r"[\[\(]", regex=True)

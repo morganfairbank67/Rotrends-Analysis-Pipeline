@@ -19,7 +19,7 @@ def test_demand_index_flags_underserved_segment():
     table = ranked.set_index("genre")
     assert table.loc["Hot", "demand_index"] > 1.5
     assert table.loc["Hot", "verdict"] == "Underserved"
-    assert table.loc["Crowded", "verdict"] == "Saturated"
+    assert table.loc["Crowded", "verdict"] == "Crowded"
     assert table.loc["Hot", "opportunity_score"] > table.loc["Crowded", "opportunity_score"]
 
 

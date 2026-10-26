@@ -41,7 +41,7 @@ with st.expander("How to read the scores"):
         "- **Opportunity score**: geometric mean of the two.\n"
         "- **Underserved**: demand index at least 1.5 and typical index at least 1. "
         "**Hit-driven**: high demand but the typical game is below the overall median. "
-        "**Saturated**: demand index below 0.75.\n"
+        "**Crowded**: demand index below 0.75.\n"
         "- Supply is only the games in the Rotrends top lists, not every game on Roblox."
     )
 
