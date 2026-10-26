@@ -1,8 +1,11 @@
 import streamlit as st
 
+from Dashboard import theme
 from Dashboard.data import GAMES_KEY, HISTORY_KEY, load_games, sidebar_filters
 
 st.set_page_config(page_title="Roblox Market Gap Finder", page_icon="📊", layout="wide")
+
+theme.apply()
 
 try:
     all_games, raw_rows = load_games()
