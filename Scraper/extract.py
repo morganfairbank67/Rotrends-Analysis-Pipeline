@@ -85,12 +85,27 @@ def extract_games(page, category):
 
     return all_games
 
+def save_diagnostics(page: Page, label: str):
+    folder = os.getenv("DIAGNOSTICS_DIR")
+    if not folder:
+        return
+    os.makedirs(folder, exist_ok=True)
+    name = label.replace(" ", "_")
+    page.screenshot(path=f"{folder}/{name}.png", full_page=True)
+    with open(f"{folder}/{name}.txt", "w") as report:
+        report.write(f"url: {page.url}\ntitle: {page.title()}\n\n")
+        report.write(page.inner_text("body")[:3000])
+
 def scrape_category(page: Page, category: str, url: str, columns: list[str]) -> list[dict]:
     """Navigates to a category URL, sets preferences, and extracts game data."""
     print(f"Scraping category: {category}...")
-    page.goto(url)
-    set_preferences(page, columns)
-    return extract_games(page, category)
+    try:
+        page.goto(url)
+        set_preferences(page, columns)
+        return extract_games(page, category)
+    except Exception:
+        save_diagnostics(page, category)
+        raise
 
 def main():
     with sync_playwright() as p:
