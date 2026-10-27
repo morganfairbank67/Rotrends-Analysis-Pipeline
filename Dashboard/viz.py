@@ -1,3 +1,4 @@
+import math
 from collections.abc import Callable
 
 import altair as alt
@@ -9,6 +10,15 @@ from Dashboard import charts
 alt.data_transformers.disable_max_rows()
 
 ROW_STEP = 26
+
+
+def limit_categories(
+    df: pd.DataFrame, column: str, keep: int = 7, other: str = "Other"
+) -> pd.DataFrame:
+    out = df.copy()
+    top = out[column].value_counts().nlargest(keep).index
+    out[column] = out[column].where(out[column].isin(top), other)
+    return out
 
 
 def categorical_scale(domain: list[str]) -> alt.Scale:
@@ -34,6 +44,7 @@ def themed(chart):
             titleFontSize=12,
             titleFontWeight="normal",
             titlePadding=10,
+            tickCount=6,
         )
         .configure_view(stroke=None)
         .configure_legend(
@@ -59,15 +70,33 @@ def axis_format(fmt: str | None) -> alt.Axis:
     return alt.Axis(format=fmt) if fmt else alt.Axis()
 
 
+def decade_ticks(values: pd.Series) -> list[float]:
+    positive = values[values > 0]
+    if positive.empty:
+        return [1, 10]
+    low = int(math.floor(math.log10(positive.min())))
+    high = int(math.ceil(math.log10(positive.max())))
+    return [10.0**power for power in range(low, high + 1)]
+
+
+def log_scale_and_axis(values: pd.Series, fmt: str | None) -> tuple[alt.Scale, alt.Axis]:
+    ticks = decade_ticks(values)
+    scale = alt.Scale(type="log", domain=[ticks[0], ticks[-1]])
+    return scale, alt.Axis(values=ticks, format=fmt or "~s")
+
+
 def color_encoding(
-    df: pd.DataFrame, color: str | None, scale: alt.Scale | None = None, title: str | None = None
+    df: pd.DataFrame,
+    color: str | None,
+    scale: alt.Scale | None = None,
+    title: str | None = None,
+    show_legend: bool = True,
 ):
     if color is None:
         return alt.value(charts.SERIES[0])
     domain = sorted(df[color].dropna().astype(str).unique().tolist())
-    return alt.Color(
-        f"{color}:N", scale=scale or categorical_scale(domain), legend=alt.Legend(title=title)
-    )
+    legend = alt.Legend(title=title) if show_legend else None
+    return alt.Color(f"{color}:N", scale=scale or categorical_scale(domain), legend=legend)
 
 
 def legend_highlight(color: str | None):
@@ -107,6 +136,8 @@ def hbar(
     ascending: bool = False,
     rule: float | None = None,
     legend_title: str | None = None,
+    x_domain: tuple[float, float] | None = None,
+    show_legend: bool = True,
 ) -> alt.LayerChart:
     data = df.copy()
     order = data.sort_values(x, ascending=ascending)[y].tolist()
@@ -115,10 +146,15 @@ def hbar(
 
     base = alt.Chart(data).encode(
         y=alt.Y(f"{y}:N", sort=order, title=None, axis=alt.Axis(labelLimit=280, ticks=False)),
-        x=alt.X(f"{x}:Q", title=x_title, axis=axis_format(x_format)),
+        x=alt.X(
+            f"{x}:Q",
+            title=x_title,
+            axis=axis_format(x_format),
+            scale=alt.Scale(domain=list(x_domain)) if x_domain else alt.Scale(),
+        ),
     )
     bars = base.mark_bar(cornerRadiusEnd=3).encode(
-        color=color_encoding(data, color, scale, legend_title),
+        color=color_encoding(data, color, scale, legend_title, show_legend),
         tooltip=tooltip or [alt.Tooltip(f"{y}:N"), alt.Tooltip(f"{x}:Q", format=",.2f")],
     )
     bars = with_highlight(bars, selection, color)
@@ -217,12 +253,23 @@ def scatter(
     label_top: int = 0,
     label_by: str | None = None,
     legend_title: str | None = None,
+    shared_log_range: pd.Series | None = None,
 ) -> alt.LayerChart:
     selection = legend_highlight(color)
-    x_scale = alt.Scale(type="log") if log_x else alt.Scale(zero=False)
-    y_scale = alt.Scale(type="log") if log_y else alt.Scale(zero=False)
-    x_enc = alt.X(f"{x}:Q", title=x_title, scale=x_scale, axis=axis_format(x_format))
-    y_enc = alt.Y(f"{y}:Q", title=y_title, scale=y_scale, axis=axis_format(y_format))
+    if log_x:
+        x_scale, x_axis = log_scale_and_axis(
+            df[x] if shared_log_range is None else shared_log_range, x_format
+        )
+    else:
+        x_scale, x_axis = alt.Scale(zero=False), axis_format(x_format)
+    if log_y:
+        y_scale, y_axis = log_scale_and_axis(
+            df[y] if shared_log_range is None else shared_log_range, y_format
+        )
+    else:
+        y_scale, y_axis = alt.Scale(zero=False), axis_format(y_format)
+    x_enc = alt.X(f"{x}:Q", title=x_title, scale=x_scale, axis=x_axis)
+    y_enc = alt.Y(f"{y}:Q", title=y_title, scale=y_scale, axis=y_axis)
 
     points = (
         alt.Chart(df)
@@ -270,8 +317,17 @@ def line(
     legend_title: str | None = None,
 ) -> alt.LayerChart:
     nearest = alt.selection_point(nearest=True, on="pointerover", fields=[x], empty=False)
+    dates = [
+        alt.DateTime(year=d.year, month=d.month, date=d.day)
+        for d in sorted(pd.to_datetime(df[x]).dt.normalize().unique())
+    ]
     base = alt.Chart(df).encode(
-        x=alt.X(f"{x}:T", title=x_title, axis=alt.Axis(format="%d %b", grid=False)),
+        x=alt.X(
+            f"{x}:T",
+            title=x_title,
+            scale=alt.Scale(padding=24),
+            axis=alt.Axis(format="%d %b", grid=False, values=dates),
+        ),
         y=alt.Y(f"{y}:Q", title=y_title, axis=alt.Axis(format=y_format)),
         color=color_encoding(df, color, scale, legend_title),
     )

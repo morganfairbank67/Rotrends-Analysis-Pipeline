@@ -105,7 +105,7 @@ def test_market_gaps_page_renders_for_both_levels(app):
     assert not app.exception
     app.radio[0].set_value("Sub-genre").run()
     assert not app.exception
-    app.radio[1].set_value("Games").run()
+    app.slider[0].set_value(1).run()
     assert not app.exception
 
 

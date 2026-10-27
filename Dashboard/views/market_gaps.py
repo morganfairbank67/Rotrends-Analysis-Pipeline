@@ -1,9 +1,9 @@
-import plotly.express as px
+import altair as alt
 import streamlit as st
 
 from Analytics.insights import age_cohorts
-from Analytics.market import genre_matrix, segment_table
-from Dashboard import charts, ui
+from Analytics.market import segment_table
+from Dashboard import charts, ui, viz
 from Dashboard.data import current_games
 
 games = current_games()
@@ -22,72 +22,89 @@ if table.empty:
     st.info("No group has that many games. Lower the slider or widen the sidebar filters.")
     st.stop()
 
-ranking_tab, newcomer_tab, heatmap_tab, age_tab = st.tabs(
-    ["Ranking", "Entry", "Genre map", "Release age"]
+ranking_tab, supply_tab, newcomer_tab, age_tab = st.tabs(
+    ["Ranking", "Supply and demand", "Entry", "Release age"]
 )
 
 with ranking_tab:
     ui.section("Share of players relative to share of games", "1x is a proportional share.")
-    ranked = table.sort_values("demand_index")
-    fig = px.bar(
-        ranked,
-        x="demand_index",
-        y=column,
-        color="verdict",
-        orientation="h",
-        text=ranked["demand_index"].map(ui.times),
-        color_discrete_map=charts.VERDICT_COLORS,
-        category_orders={"verdict": charts.VERDICT_ORDER},
-        hover_data={"games": True, "total_ccu": ":,", "demand_index": False, "verdict": False},
+    viz.show(
+        viz.hbar(
+            table,
+            column,
+            "demand_index",
+            color="verdict",
+            scale=viz.verdict_scale(),
+            label=ui.times,
+            x_title="Times its proportional share of players",
+            rule=1,
+            tooltip=[
+                alt.Tooltip(f"{column}:N", title=level),
+                alt.Tooltip("verdict:N", title="Verdict"),
+                alt.Tooltip("demand_index:Q", title="Share multiple", format=".2f"),
+                alt.Tooltip("games:Q", title="Games"),
+                alt.Tooltip("total_ccu:Q", title="Players", format=","),
+                alt.Tooltip("top_game:N", title="Largest game"),
+            ],
+        )
     )
-    fig.add_vline(x=1, line_dash="dot", line_color="rgba(128,128,128,0.8)")
-    fig.update_traces(textposition="outside", cliponaxis=False)
-    fig.update_xaxes(title="Times its fair share of players")
-    fig.update_yaxes(title=None)
-    charts.show(fig, max(380, 30 * len(ranked) + 110))
+
+with supply_tab:
+    ui.section("Games against players", "Top left: many players, few games. Both axes logarithmic.")
+    viz.show(
+        viz.scatter(
+            table,
+            "games",
+            "total_ccu",
+            color="verdict",
+            scale=viz.verdict_scale(),
+            size="median_ccu",
+            log_x=True,
+            log_y=True,
+            x_title="Games in the top lists",
+            y_title="Total players",
+            label=column,
+            label_top=5,
+            label_by="total_ccu",
+            tooltip=[
+                alt.Tooltip(f"{column}:N", title=level),
+                alt.Tooltip("verdict:N", title="Verdict"),
+                alt.Tooltip("games:Q", title="Games"),
+                alt.Tooltip("total_ccu:Q", title="Players", format=","),
+                alt.Tooltip("median_ccu:Q", title="Typical game", format=",.0f"),
+            ],
+        ),
+        height=460,
+    )
 
 with newcomer_tab:
     ui.section("Release recency and incumbent concentration")
-    fig = px.scatter(
-        table,
-        x="recent_share",
-        y="top_game_share",
-        size="games",
-        size_max=44,
-        color="verdict",
-        hover_name=column,
-        hover_data={"games": True, "top_game": True, "verdict": False,
-                    "recent_share": ":.0%", "top_game_share": ":.0%"},
-        color_discrete_map=charts.VERDICT_COLORS,
-        category_orders={"verdict": charts.VERDICT_ORDER},
+    viz.show(
+        viz.scatter(
+            table,
+            "recent_share",
+            "top_game_share",
+            color="verdict",
+            scale=viz.verdict_scale(),
+            size="games",
+            x_title="Share of games under 90 days old",
+            y_title="Largest game's share of group players",
+            x_format="%",
+            y_format="%",
+            label=column,
+            label_top=6,
+            label_by="total_ccu",
+            tooltip=[
+                alt.Tooltip(f"{column}:N", title=level),
+                alt.Tooltip("verdict:N", title="Verdict"),
+                alt.Tooltip("games:Q", title="Games"),
+                alt.Tooltip("recent_share:Q", title="Under 90 days", format=".0%"),
+                alt.Tooltip("top_game_share:Q", title="Largest game share", format=".0%"),
+                alt.Tooltip("top_game:N", title="Largest game"),
+            ],
+        ),
+        height=460,
     )
-    for row in table.nlargest(6, "total_ccu").itertuples():
-        fig.add_annotation(x=row.recent_share, y=row.top_game_share, text=getattr(row, column),
-                           showarrow=False, yshift=16, font_size=12)
-    fig.add_annotation(xref="paper", yref="paper", x=0.99, y=0.02, text="Open",
-                       showarrow=False, font=dict(size=13, color=charts.SERIES[0]), xanchor="right")
-    fig.add_annotation(xref="paper", yref="paper", x=0.01, y=0.98, text="Concentrated",
-                       showarrow=False, font=dict(size=13, color=charts.MUTED), xanchor="left",
-                       yanchor="top")
-    fig.update_xaxes(title="Share of games under 90 days old", tickformat=".0%")
-    fig.update_yaxes(title="Largest game's share of group players", tickformat=".0%")
-    charts.show(fig, 520)
-
-with heatmap_tab:
-    measure = st.radio("Measure", ["Players", "Games"], horizontal=True)
-    if measure == "Players":
-        matrix = genre_matrix(games, "players_ccu", "sum")
-    else:
-        matrix = genre_matrix(games, "game_name", "count")
-    fig = px.imshow(
-        matrix,
-        aspect="auto",
-        color_continuous_scale=charts.BLUE_SCALE,
-        labels=dict(color=measure),
-    )
-    fig.update_xaxes(title=None, tickangle=-45)
-    fig.update_yaxes(title=None)
-    charts.show(fig, 560)
 
 with age_tab:
     ui.section("Share of players and games by release age")
@@ -100,19 +117,22 @@ with age_tab:
     cohorts["measure"] = cohorts["measure"].map(
         {"ccu_share": "Share of players", "game_share": "Share of games"}
     )
-    fig = px.bar(
-        cohorts,
-        x="age_bucket",
-        y="share",
-        color="measure",
-        barmode="group",
-        text=cohorts["share"].map(lambda v: f"{v:.0%}"),
-        color_discrete_sequence=charts.SERIES[:2],
+    viz.show(
+        viz.vbar_grouped(
+            cohorts,
+            "age_bucket",
+            "share",
+            "measure",
+            order=["< 1 month", "1-3 months", "3-12 months", "1-3 years", "3+ years"],
+            label=lambda v: f"{v:.0%}",
+            y_format="%",
+            scale=alt.Scale(
+                domain=["Share of games", "Share of players"],
+                range=[charts.MUTED, charts.SERIES[0]],
+            ),
+        ),
+        height=380,
     )
-    fig.update_traces(textposition="outside", cliponaxis=False)
-    fig.update_xaxes(title="Time since release")
-    fig.update_yaxes(title=None, tickformat=".0%")
-    charts.show(fig, 420)
 
     fresh = games[games["age_days"] <= 30].nlargest(10, "players_ccu")
     st.markdown("**Largest releases in the last 30 days**")
@@ -122,7 +142,7 @@ with age_tab:
         width="stretch",
         column_config={
             "display_name": "Game", "genre": "Genre", "sub_genre": "Sub-genre",
-            "players_ccu": st.column_config.NumberColumn("Players now", format="%d"),
+            "players_ccu": st.column_config.NumberColumn("Players", format="%d"),
             "age_days": st.column_config.NumberColumn("Age (days)", format="%d"),
         },
     )
@@ -139,6 +159,6 @@ with st.expander("Data"):
             "median_ccu": st.column_config.NumberColumn("Typical game", format="%d"),
             "demand_index": st.column_config.NumberColumn("Fair-share multiple", format="%.2f"),
             "opportunity_score": st.column_config.NumberColumn("Opportunity", format="%.2f"),
-            "top_game": "Biggest game",
+            "top_game": "Largest game",
         },
     )
