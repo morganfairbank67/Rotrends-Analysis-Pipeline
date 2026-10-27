@@ -107,6 +107,18 @@ def scrape_category(page: Page, category: str, url: str, columns: list[str]) -> 
         save_diagnostics(page, category)
         raise
 
+MAX_ATTEMPTS = 4
+PAUSE_BETWEEN_CATEGORIES_MS = 5000
+
+def scrape_with_retries(page: Page, category: str, url: str, columns: list[str]):
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            return scrape_category(page, category, url, columns)
+        except Exception as e:
+            print(f"{category}: attempt {attempt} of {MAX_ATTEMPTS} failed ({type(e).__name__})")
+            page.wait_for_timeout(5000 * attempt)
+    return None
+
 def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=os.getenv("HEADLESS", "").lower() == "true")
@@ -133,9 +145,20 @@ def main():
         }
 
         all_games_data = []
+        failed = []
         for category, url in categories_to_scrape.items():
-            games = scrape_category(page, category, url, columns)
+            games = scrape_with_retries(page, category, url, columns)
+            if games is None:
+                failed.append(category)
+                continue
             all_games_data.extend(games) # Flatten the list
+            page.wait_for_timeout(PAUSE_BETWEEN_CATEGORIES_MS)
+
+        if failed:
+            print(f"Skipped categories after {MAX_ATTEMPTS} attempts: {', '.join(failed)}")
+        if len(failed) > len(categories_to_scrape) // 2:
+            browser.close()
+            raise RuntimeError("Too many categories failed to scrape")
 
         browser.close()
         print(f"Scraping complete. Extracted data for {len(all_games_data)} games.")
