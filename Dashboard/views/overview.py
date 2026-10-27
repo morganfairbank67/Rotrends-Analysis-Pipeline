@@ -1,9 +1,9 @@
-import plotly.express as px
+import altair as alt
 import streamlit as st
 
 from Analytics.market import segment_table
 from Analytics.summary import headline_findings
-from Dashboard import charts, ui
+from Dashboard import charts, ui, viz
 from Dashboard.data import current_games, current_history
 
 games = current_games()
@@ -35,37 +35,57 @@ ui.section("Player share minus game share, by genre", "Percentage points")
 genres["side"] = genres["gap"].map(
     lambda v: "More players than games" if v >= 0 else "More games than players"
 )
-fig = px.bar(
-    genres,
-    x="gap",
-    y="genre",
-    color="side",
-    orientation="h",
-    text=genres["gap"].map(lambda v: f"{v:+.1f}"),
-    color_discrete_map={
-        "More players than games": charts.SERIES[0],
-        "More games than players": charts.MUTED,
-    },
-    hover_data={"games": True, "total_ccu": ":,", "gap": False, "side": False},
+side_scale = alt.Scale(
+    domain=["More players than games", "More games than players"],
+    range=[charts.SERIES[0], charts.MUTED],
 )
-fig.update_traces(textposition="outside", cliponaxis=False)
-fig.update_xaxes(title=None)
-fig.update_yaxes(title=None)
-charts.show(fig, max(340, 32 * len(genres) + 90))
+viz.show(
+    viz.hbar(
+        genres,
+        "genre",
+        "gap",
+        color="side",
+        scale=side_scale,
+        label=lambda v: f"{v:+.1f}",
+        x_title="Percentage points",
+        rule=0,
+        tooltip=[
+            alt.Tooltip("genre:N", title="Genre"),
+            alt.Tooltip("gap:Q", title="Share gap (pts)", format="+.1f"),
+            alt.Tooltip("games:Q", title="Games"),
+            alt.Tooltip("total_ccu:Q", title="Players", format=","),
+        ],
+    )
+)
 
-ui.section("Concurrent players by genre and sub-genre")
-tree = games.groupby(["genre", "sub_genre"], as_index=False)["players_ccu"].sum()
-fig = px.treemap(
-    tree,
-    path=["genre", "sub_genre"],
-    values="players_ccu",
-    color="genre",
-    color_discrete_sequence=charts.SERIES,
+ui.section("Largest sub-genres by concurrent players")
+subs = (
+    games[games["sub_genre"] != "Unclassified"]
+    .groupby("sub_genre")
+    .agg(
+        players=("players_ccu", "sum"),
+        games=("game_key", "nunique"),
+        genre=("genre", lambda s: s.value_counts().index[0]),
+    )
+    .reset_index()
+    .nlargest(15, "players")
 )
-fig.update_traces(
-    hovertemplate="%{label}<br>%{value:,} players<extra></extra>", textinfo="label+percent root"
+viz.show(
+    viz.hbar(
+        subs,
+        "sub_genre",
+        "players",
+        color="genre",
+        label=ui.compact,
+        x_format="~s",
+        tooltip=[
+            alt.Tooltip("sub_genre:N", title="Sub-genre"),
+            alt.Tooltip("genre:N", title="Genre"),
+            alt.Tooltip("players:Q", title="Players", format=","),
+            alt.Tooltip("games:Q", title="Games"),
+        ],
+    )
 )
-charts.show(fig, 500)
 
 ui.section("Largest games")
 top = games.nlargest(15, "players_ccu")[

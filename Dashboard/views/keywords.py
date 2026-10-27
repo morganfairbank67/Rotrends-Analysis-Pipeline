@@ -1,9 +1,9 @@
-import plotly.express as px
+import altair as alt
 import streamlit as st
 
 from Analytics.insights import title_feature_impact
 from Analytics.text import phrase_games, phrase_table
-from Dashboard import charts, ui
+from Dashboard import charts, ui, viz
 from Dashboard.data import current_games
 
 LENGTHS = {
@@ -27,67 +27,73 @@ if table.empty:
     st.info("No phrase meets the minimum. Lower it or widen the filters.")
     st.stop()
 
-common_tab, gap_tab, inside_tab, tricks_tab = st.tabs(
+frequency_tab, opportunity_tab, detail_tab, features_tab = st.tabs(
     ["Frequency", "Opportunities", "Phrase detail", "Title features"]
 )
 
-with common_tab:
+phrase_tooltip = [
+    alt.Tooltip("phrase:N", title="Phrase"),
+    alt.Tooltip("games:Q", title="Games"),
+    alt.Tooltip("total_ccu:Q", title="Players", format=","),
+    alt.Tooltip("top_game:N", title="Largest game"),
+    alt.Tooltip("verdict:N", title="Verdict"),
+]
+
+with frequency_tab:
     ui.section("Most used phrases", "Games using each phrase")
-    common = table.nlargest(15, "games").sort_values("games")
-    fig = px.bar(
-        common,
-        x="games",
-        y="phrase",
-        orientation="h",
-        text="games",
-        color_discrete_sequence=[charts.SERIES[0]],
-        hover_data={"total_ccu": ":,", "top_game": True, "games": False},
-    )
-    fig.update_traces(textposition="outside", cliponaxis=False)
-    fig.update_xaxes(title="Games using the phrase")
-    fig.update_yaxes(title=None)
-    charts.show(fig, 480)
-
-with gap_tab:
-    ui.section("Share of players relative to share of games", "1x is a proportional share.")
-    best = table.nlargest(15, "opportunity_score").sort_values("opportunity_score")
-    fig = px.bar(
-        best,
-        x="demand_index",
-        y="phrase",
-        color="verdict",
-        orientation="h",
-        text=best["demand_index"].map(ui.times),
-        color_discrete_map=charts.VERDICT_COLORS,
-        category_orders={"verdict": charts.VERDICT_ORDER},
-        hover_data={"games": True, "total_ccu": ":,", "top_game": True, "demand_index": False,
-                    "verdict": False},
-    )
-    fig.add_vline(x=1, line_dash="dot", line_color="rgba(128,128,128,0.8)")
-    fig.update_traces(textposition="outside", cliponaxis=False)
-    fig.update_xaxes(title="Times its fair share of players")
-    fig.update_yaxes(title=None)
-    charts.show(fig, 520)
-    with st.expander("Supply and demand"):
-        fig = px.scatter(
-            table,
-            x="games",
-            y="total_ccu",
+    viz.show(
+        viz.hbar(
+            table.nlargest(15, "games"),
+            "phrase",
+            "games",
             color="verdict",
-            size="median_ccu",
-            size_max=34,
-            log_x=True,
-            log_y=True,
-            hover_name="phrase",
-            hover_data={"top_game": True, "demand_index": ":.2f", "verdict": False},
-            color_discrete_map=charts.VERDICT_COLORS,
-            category_orders={"verdict": charts.VERDICT_ORDER},
+            scale=viz.verdict_scale(),
+            label=lambda v: f"{v:.0f}",
+            x_title="Games using the phrase",
+            tooltip=phrase_tooltip,
         )
-        fig.update_xaxes(title="Games using the phrase")
-        fig.update_yaxes(title="Total players online")
-        charts.show(fig, 480)
+    )
 
-with inside_tab:
+with opportunity_tab:
+    ui.section("Share of players relative to share of games", "1x is a proportional share.")
+    best = table.nlargest(15, "opportunity_score")
+    viz.show(
+        viz.hbar(
+            best,
+            "phrase",
+            "demand_index",
+            color="verdict",
+            scale=viz.verdict_scale(),
+            label=ui.times,
+            x_title="Times its proportional share of players",
+            rule=1,
+            tooltip=phrase_tooltip
+            + [alt.Tooltip("demand_index:Q", title="Share multiple", format=".2f")],
+        )
+    )
+    with st.expander("Supply and demand"):
+        viz.show(
+            viz.scatter(
+                table,
+                "games",
+                "total_ccu",
+                color="verdict",
+                scale=viz.verdict_scale(),
+                size="median_ccu",
+                log_x=True,
+                log_y=True,
+                x_title="Games using the phrase (log)",
+                y_title="Total players (log)",
+                y_format="~s",
+                label="phrase",
+                label_top=8,
+                label_by="opportunity_score",
+                tooltip=phrase_tooltip,
+            ),
+            height=460,
+        )
+
+with detail_tab:
     choice = st.selectbox("Phrase", table["phrase"])
     matches = phrase_games(games, choice)
     row = table[table["phrase"] == choice].iloc[0]
@@ -102,29 +108,35 @@ with inside_tab:
         width="stretch",
         column_config={
             "display_name": "Game", "genre": "Genre", "sub_genre": "Sub-genre",
-            "players_ccu": st.column_config.NumberColumn("Players now", format="%d"),
+            "players_ccu": st.column_config.NumberColumn("Players", format="%d"),
             "avg_session": st.column_config.NumberColumn("Avg session (min)", format="%.1f"),
-            "like_ratio": st.column_config.ProgressColumn("Liked", min_value=0, max_value=1,
-                                                          format="percent"),
+            "like_ratio": st.column_config.ProgressColumn(
+                "Liked", min_value=0, max_value=1, format="percent"
+            ),
             "age_days": st.column_config.NumberColumn("Age (days)", format="%d"),
         },
     )
 
-with tricks_tab:
+with features_tab:
     ui.section("Median players by title feature")
     impact = title_feature_impact(games)
     impact["present"] = impact["present"].map({True: "Has it", False: "Does not"})
-    fig = px.bar(
-        impact,
-        x="feature",
-        y="median_ccu",
-        color="present",
-        barmode="group",
-        text=impact["median_ccu"].map(ui.compact),
-        color_discrete_sequence=[charts.SERIES[0], charts.MUTED],
-        hover_data={"games": True},
+    viz.show(
+        viz.vbar_grouped(
+            impact,
+            "feature",
+            "median_ccu",
+            "present",
+            label=ui.compact,
+            y_title="Median players",
+            y_format="~s",
+            scale=alt.Scale(domain=["Has it", "Does not"], range=[charts.SERIES[0], charts.MUTED]),
+            tooltip=[
+                alt.Tooltip("feature:N", title="Feature"),
+                alt.Tooltip("present:N", title=""),
+                alt.Tooltip("median_ccu:Q", title="Median players", format=",.0f"),
+                alt.Tooltip("games:Q", title="Games"),
+            ],
+        ),
+        height=380,
     )
-    fig.update_traces(textposition="outside", cliponaxis=False)
-    fig.update_xaxes(title=None)
-    fig.update_yaxes(title="Median players")
-    charts.show(fig, 420)
