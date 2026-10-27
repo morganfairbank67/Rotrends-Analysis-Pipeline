@@ -46,15 +46,11 @@ Games that appear in more than one Rotrends list are collapsed to one row, and g
 The supply side is only the games in the scraped top lists, so a high score means under-served among top games, not across all of Roblox.
 
 ### Weekly scrape
-Rotrends blocks the scraper when the browser runs headless, so the weekly run happens on a Mac with a visible browser window.
+`.github/workflows/scrape.yml` runs every Monday at 06:00 UTC and can also be started from the Actions tab. It scrapes the Rotrends lists headless, validates the rows and upserts them into Supabase.
 
-```bash
-./scripts/install_schedule.sh
-```
+Add two repository secrets under Settings, Secrets and variables, Actions: `SUPABASE_URL` and `SUPABASE_KEY`.
 
-This installs a macOS launchd job that runs `python -m Scraper.validate` every Monday at 09:00 and appends output to `logs/scrape.log`. If the Mac is asleep at that time the job runs when it wakes. Remove it with `./scripts/install_schedule.sh uninstall`.
-
-`.github/workflows/scrape.yml` is kept as a manual trigger only, for use if Rotrends ever allows headless access.
+Locally the browser window stays visible unless `HEADLESS=true` is set. `scripts/install_schedule.sh` installs an equivalent macOS launchd job for running the scrape on a Mac instead.
 
 ### Docker
 ```bash
