@@ -6,7 +6,7 @@ from Cloud_Database import recieveData
 
 GAMES_KEY = "games"
 HISTORY_KEY = "history"
-FILTER_DEFAULTS = {"f_genres": [], "f_floor": 0, "f_new_only": False, "f_snapshot": None}
+FILTER_DEFAULTS = {"f_genres": [], "f_floor": 0, "f_new_only": False}
 
 
 @st.cache_data(ttl=600, show_spinner="Loading games from Supabase")
@@ -18,6 +18,7 @@ def load_games() -> tuple[pd.DataFrame, int]:
 def reset_filters() -> None:
     for key, value in FILTER_DEFAULTS.items():
         st.session_state[key] = value
+    st.session_state.pop("f_snapshot", None)
 
 
 def sidebar_filters(games: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -42,7 +43,7 @@ def sidebar_filters(games: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     history = games
     dates = sorted(games["extract_date"].dropna().dt.date.unique(), reverse=True)
     if len(dates) > 1:
-        chosen = st.sidebar.selectbox("Snapshot", dates, key="f_snapshot")
+        chosen = st.sidebar.selectbox("Snapshot", dates, index=0, key="f_snapshot")
         current = games[games["extract_date"].dt.date == chosen]
     else:
         current = games
