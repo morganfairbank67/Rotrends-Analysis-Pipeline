@@ -142,3 +142,28 @@ def test_trends_page_compares_two_snapshots(monkeypatch):
     assert not app.exception
     assert len(app.metric) == 3
     assert len(app.dataframe) == 2
+
+
+def two_week_app(monkeypatch):
+    monkeypatch.setattr(recieveData, "get_data", two_week_raw)
+    st.cache_data.clear()
+    entry = Path(__file__).resolve().parent.parent / "streamlit_app.py"
+    return AppTest.from_file(str(entry), default_timeout=60).run()
+
+
+def test_latest_snapshot_is_selected_by_default(monkeypatch):
+    app = two_week_app(monkeypatch)
+    assert not app.exception
+    assert str(app.sidebar.selectbox[0].value) == "2026-07-30"
+    assert "120 games" in app.sidebar.caption[-1].value
+    assert not app.warning
+
+
+def test_older_snapshot_can_be_chosen_and_reset_restores_latest(monkeypatch):
+    app = two_week_app(monkeypatch)
+    older = app.sidebar.selectbox[0].options[1]
+    app.sidebar.selectbox[0].select(older).run()
+    assert "110 games" in app.sidebar.caption[-1].value
+    app.sidebar.button[0].click().run()
+    assert not app.exception
+    assert "120 games" in app.sidebar.caption[-1].value
