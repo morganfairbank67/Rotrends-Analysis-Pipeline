@@ -1,10 +1,12 @@
-name: Manual scrape
+name: Weekly scrape
 
 on:
+  schedule:
+    - cron: "0 6 * * 1"
   workflow_dispatch:
 
 concurrency:
-  group: manual-scrape
+  group: weekly-scrape
   cancel-in-progress: false
 
 jobs:
@@ -13,13 +15,11 @@ jobs:
     timeout-minutes: 30
     env:
       HEADLESS: "true"
-      ROTRENDS_EMAIL: ${{ secrets.ROTRENDS_EMAIL }}
-      ROTRENDS_PASSWORD: ${{ secrets.ROTRENDS_PASSWORD }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
           cache: pip
