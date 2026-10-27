@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 30
     env:
       HEADLESS: "true"
+      DIAGNOSTICS_DIR: diagnostics
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
     steps:
@@ -27,3 +28,10 @@ jobs:
       - run: pip install -r requirements-scraper.txt
       - run: playwright install --with-deps chromium
       - run: python -m Scraper.validate
+        timeout-minutes: 10
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: scrape-diagnostics
+          path: diagnostics
+          if-no-files-found: warn
