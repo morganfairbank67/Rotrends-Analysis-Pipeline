@@ -1,11 +1,14 @@
 import os
 
-from playwright.sync_api import sync_playwright, Page, BrowserContext
+from playwright.sync_api import BrowserContext, Page, sync_playwright
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 import datetime
 from datetime import date
 from dotenv import load_dotenv
 
 load_dotenv()
+
+MENU_ATTEMPTS = 3
 
 def login(page: Page):
     email = os.getenv("ROTRENDS_EMAIL")
@@ -36,8 +39,22 @@ def login(page: Page):
     
     print("Login successful.")
 
+def open_metrics_menu(page, first_metric):
+    button = page.get_by_role("button").filter(has_text="Metrics")
+    first_option = page.locator(f'li[title="{first_metric}"]')
+    for attempt in range(MENU_ATTEMPTS):
+        if first_option.count() == 0:
+            button.click()
+        try:
+            first_option.wait_for(state="attached", timeout=10000)
+            return
+        except PlaywrightTimeoutError:
+            print(f"Metrics menu did not open (attempt {attempt + 1})")
+    raise PlaywrightTimeoutError("Metrics menu never opened")
+
 def set_preferences(page, columns):
-    page.get_by_role("button").filter(has_text="Metrics").click()
+    page.wait_for_selector(".ant-table-row")
+    open_metrics_menu(page, columns[1])
 
     for metric in columns[1:-1]:
         option = page.locator(f'li[title="{metric}"]')
@@ -124,6 +141,7 @@ def main():
         browser = p.chromium.launch(headless=os.getenv("HEADLESS", "").lower() == "true")
         
         context = browser.new_context()
+        context.set_default_timeout(60000)
         page = context.new_page()
         # login(page)
 
