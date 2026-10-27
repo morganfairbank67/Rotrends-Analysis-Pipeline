@@ -16,7 +16,7 @@ jobs:
           cache: pip
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements-dev.txt
-      - run: ruff check Analytics Dashboard tests streamlit_app.py Cloud_Database/recieveData.py
+      - run: ruff check Analytics Dashboard Cloud_Database tests streamlit_app.py
       - run: pytest -q
 
   docker:

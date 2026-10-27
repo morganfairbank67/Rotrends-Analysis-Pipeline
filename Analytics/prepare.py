@@ -1,29 +1,13 @@
 import re
-import unicodedata
 
 import numpy as np
 import pandas as pd
 
-BRACKETED = re.compile(r"\[[^\]]*\]|\([^)]*\)")
-NON_WORD = re.compile(r"[\W_]+")
-EMOJI_JOINERS = {0xFE0F, 0x200D}
+from Analytics.identity import BRACKETED, game_key, is_emoji
+
 IDENTITY_COLUMNS = ["game_key", "extract_date"]
 AGE_BINS = [-1, 30, 90, 365, 1095, np.inf]
 AGE_LABELS = ["< 1 month", "1-3 months", "3-12 months", "1-3 years", "3+ years"]
-
-
-def is_emoji(char: str) -> bool:
-    return (
-        unicodedata.category(char) == "So"
-        or ord(char) >= 0x1F000
-        or ord(char) in EMOJI_JOINERS
-    )
-
-
-def core_title(title: str) -> str:
-    text = BRACKETED.sub(" ", str(title).lower())
-    text = "".join(" " if is_emoji(c) else c for c in text)
-    return NON_WORD.sub(" ", text).strip()
 
 
 def display_title(title: str) -> str:
@@ -35,17 +19,22 @@ def display_title(title: str) -> str:
 
 def add_game_key(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
-    created = pd.to_datetime(out["created"], errors="coerce").dt.strftime("%Y-%m-%d")
-    out["game_key"] = out["game_name"].map(core_title) + "|" + created.fillna("unknown")
+    created = pd.to_datetime(out["created"], errors="coerce")
+    out["game_key"] = [game_key(n, c) for n, c in zip(out["game_name"], created, strict=True)]
     return out
+
+
+def merge_categories(values) -> str:
+    names = {part.strip() for value in values for part in str(value).split(",")}
+    return ", ".join(sorted(names))
 
 
 def collapse_list_appearances(df: pd.DataFrame) -> pd.DataFrame:
     df = add_game_key(df)
     grouped = df.groupby(IDENTITY_COLUMNS, sort=False, dropna=False)
     collapsed = grouped.first().reset_index()
-    collapsed["categories"] = grouped["category"].agg(lambda s: ", ".join(sorted(set(s)))).values
-    collapsed["list_count"] = grouped["category"].nunique().values
+    collapsed["categories"] = grouped["category"].agg(merge_categories).values
+    collapsed["list_count"] = collapsed["categories"].str.count(",") + 1
     return collapsed.drop(columns=["category"])
 
 

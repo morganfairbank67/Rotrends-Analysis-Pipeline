@@ -2,8 +2,8 @@ import re
 
 import pandas as pd
 
+from Analytics.identity import BRACKETED, is_emoji
 from Analytics.market import segment_table
-from Analytics.prepare import BRACKETED, is_emoji
 
 SEGMENT_BREAKS = re.compile(r"[|:/&,!?.\-–—~•+]+")
 WORD = re.compile(r"[^\W\d_]+(?:'[^\W\d_]+)?")

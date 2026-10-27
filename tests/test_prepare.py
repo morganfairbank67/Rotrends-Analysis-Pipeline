@@ -1,6 +1,6 @@
 import numpy as np
 
-from Analytics import prepare
+from Analytics import identity, prepare
 
 
 def test_collapse_merges_list_appearances(raw_games):
@@ -53,8 +53,8 @@ def test_latest_snapshot_keeps_newest_extract(raw_games):
 
 
 def test_game_key_ignores_title_tags_and_emoji():
-    assert prepare.core_title("[UPD] 🔥 Fish It! 🐟") == "fish it"
-    assert prepare.core_title("Fish It!") == "fish it"
+    assert identity.core_title("[UPD] 🔥 Fish It! 🐟") == "fish it"
+    assert identity.core_title("Fish It!") == "fish it"
 
 
 def test_same_game_with_changed_title_collapses(raw_games):
