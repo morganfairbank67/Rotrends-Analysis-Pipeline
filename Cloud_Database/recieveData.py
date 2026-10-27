@@ -1,20 +1,9 @@
-import os
-
 import pandas as pd
-from dotenv import find_dotenv, load_dotenv
-from supabase import Client, create_client
+from supabase import Client
 
-load_dotenv(find_dotenv())
+from Cloud_Database.client import get_client
 
 PAGE_SIZE = 1000
-
-
-def get_client() -> Client:
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
-    if not url or not key:
-        raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set")
-    return create_client(url, key)
 
 
 def fetch_table(client: Client, table: str) -> pd.DataFrame:

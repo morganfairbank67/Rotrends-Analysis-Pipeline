@@ -21,3 +21,4 @@ __pycache__/
 .streamlit/secrets.toml
 logs/
 diagnostics/
+backups/

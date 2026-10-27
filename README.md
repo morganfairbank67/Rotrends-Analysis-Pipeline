@@ -52,6 +52,16 @@ Add two repository secrets under Settings, Secrets and variables, Actions: `SUPA
 
 Locally the browser window stays visible unless `HEADLESS=true` is set. `scripts/install_schedule.sh` installs an equivalent macOS launchd job for running the scrape on a Mac instead.
 
+### Game identity
+Each game gets a stable ID derived from its cleaned title and release date, so the same game keeps the same ID across weekly scrapes and across the Rotrends lists it appears in. Re-running a scrape replaces that day's metrics instead of adding duplicates.
+
+Databases created before this change can be converted once:
+
+```bash
+python -m Cloud_Database.migrate_game_ids          # dry run
+python -m Cloud_Database.migrate_game_ids --apply  # writes a JSON backup, then migrates
+```
+
 ### Docker
 ```bash
 docker compose up --build

@@ -6,6 +6,7 @@ from datetime import datetime
 import uuid
 from datetime import date
 
+from Analytics.identity import stable_game_id
 from Scraper.extract import main
 
 class ScrapedGameData(BaseModel):
@@ -38,6 +39,11 @@ class ScrapedGameData(BaseModel):
     down_votes: Optional[int] = Field(None,alias="Down Votes", description="Number of down votes")
     created: Optional[datetime] = Field(None,alias="Created", description="Creation date of the game")
     extract_date: datetime = Field(date.today(),alias="Date Extracted", description="Date when the data was extracted")
+
+    @model_validator(mode="after")
+    def assign_stable_id(self):
+        self.game_id = stable_game_id(self.game_name, self.created)
+        return self
 
     @model_validator(mode="before")
     @classmethod
@@ -142,5 +148,5 @@ if __name__ == "__main__":
         except ValidationError:
             pass
     from Cloud_Database.database import upload_data
-    upload_data(clean_games)
-    print(f"Uploaded {len(clean_games)} games to Supabase.")
+    games_stored, metrics_stored = upload_data(clean_games)
+    print(f"Uploaded {games_stored} games and {metrics_stored} metric rows to Supabase.")
